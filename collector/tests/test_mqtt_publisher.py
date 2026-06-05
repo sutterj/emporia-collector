@@ -81,6 +81,7 @@ class TestMQTTDiscovery:
 
         pub.publish_discovery(
             device_gid=12345,
+            device_model="VUE003",
             device_name="Home Panel",
             channel_num="1,2,3",
             channel_name="Main",
@@ -127,6 +128,7 @@ class TestMQTTDiscovery:
 
         pub.publish_discovery(
             device_gid=99,
+            device_model="VUE003",
             device_name="My Vue",
             channel_num="5",
             channel_name="Dryer",
@@ -161,7 +163,7 @@ class TestMQTTDiscovery:
         pub._connected = True
 
         pub.publish_discovery(
-            device_gid=1, device_name="X",
+            device_gid=1, device_name="X", device_model="VUE003",
             channel_num="1", channel_name="Y", channel_slug="y",
         )
 
@@ -179,16 +181,88 @@ class TestMQTTDiscovery:
         pub._connected = True
 
         pub.publish_discovery(
-            device_gid=1, device_name="X",
+            device_gid=1, device_name="X", device_model="VUE003",
             channel_num="1", channel_name="Y", channel_slug="y",
         )
         pub.publish_discovery(
-            device_gid=1, device_name="X",
+            device_gid=1, device_name="X", device_model="VUE003",
             channel_num="1", channel_name="Y", channel_slug="y",
         )
 
         # 2 messages (power + energy) on first call, nothing on second
         assert mock_client.publish.call_count == 2
+
+
+class TestMQTTPublishEnergyCost:
+    """Test energy cost sensor publishing."""
+
+    @patch("mqtt_publisher.mqtt.Client")
+    def test_publishes_cost_sensor(self, mock_client_class):
+        mock_client = MagicMock()
+        mock_client_class.return_value = mock_client
+
+        pub = MQTTPublisher(broker_host="localhost")
+        pub._connected = True
+
+        pub.publish_energy_cost(
+            device_gid=605039,
+            device_name="Inhab",
+            device_model="VUE003",
+            cost_cent_per_kwh=13.2,
+        )
+
+        # Should publish discovery config + state value
+        assert mock_client.publish.call_count == 2
+
+        # Discovery config
+        discovery_call = mock_client.publish.call_args_list[0]
+        assert "homeassistant/sensor/emporia_605039_energy_cost/config" in discovery_call[0]
+        config = json.loads(discovery_call[0][1])
+        assert config["unit_of_measurement"] == "$/kWh"
+        assert config["name"] == "Inhab Energy Cost"
+        assert config["unique_id"] == "emporia_605039_energy_cost"
+
+        # State value (cents to dollars)
+        state_call = mock_client.publish.call_args_list[1]
+        assert "energy_cost" in state_call[0][0]
+        assert state_call[0][1] == "0.132"
+
+    @patch("mqtt_publisher.mqtt.Client")
+    def test_cost_not_sent_twice(self, mock_client_class):
+        mock_client = MagicMock()
+        mock_client_class.return_value = mock_client
+
+        pub = MQTTPublisher(broker_host="localhost")
+        pub._connected = True
+
+        pub.publish_energy_cost(
+            device_gid=1, device_name="X", device_model="VUE003",
+            cost_cent_per_kwh=10.0,
+        )
+        pub.publish_energy_cost(
+            device_gid=1, device_name="X", device_model="VUE003",
+            cost_cent_per_kwh=10.0,
+        )
+
+        # 2 messages on first call (discovery + state), nothing on second
+        assert mock_client.publish.call_count == 2
+
+    @patch("mqtt_publisher.mqtt.Client")
+    def test_cost_is_retained(self, mock_client_class):
+        mock_client = MagicMock()
+        mock_client_class.return_value = mock_client
+
+        pub = MQTTPublisher(broker_host="localhost")
+        pub._connected = True
+
+        pub.publish_energy_cost(
+            device_gid=1, device_name="X", device_model="VUE003",
+            cost_cent_per_kwh=16.5,
+        )
+
+        # Both discovery and state should be retained
+        for call_item in mock_client.publish.call_args_list:
+            assert call_item[1]["retain"] is True
 
 
 class TestMQTTPublishUsage:
