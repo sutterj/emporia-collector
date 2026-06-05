@@ -57,6 +57,7 @@ class Device:
     model: str
     device_name: str
     time_zone: str
+    usage_cent_per_kwh: float | None = None
     channels: list[Channel] = field(default_factory=list)
 
     @property
@@ -142,6 +143,7 @@ class EmporiaAPI:
             loc = dev_data.get("locationProperties", {})
             device_name = loc.get("deviceName", f"Vue {gid}")
             time_zone = loc.get("timeZone", "UTC")
+            usage_cent_per_kwh = loc.get("usageCentPerKwHour")
 
             channels = []
 
@@ -176,6 +178,7 @@ class EmporiaAPI:
                 model=dev_data.get("model", ""),
                 device_name=device_name,
                 time_zone=time_zone,
+                usage_cent_per_kwh=usage_cent_per_kwh,
                 channels=channels,
             ))
 

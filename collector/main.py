@@ -127,6 +127,13 @@ def main():
                 channel_name=ch.display_name,
                 channel_slug=ch.slug,
             )
+        if dev.usage_cent_per_kwh is not None:
+            publisher.publish_energy_cost(
+                device_gid=dev.device_gid,
+                device_name=dev.device_name,
+                device_model=dev.model,
+                cost_cent_per_kwh=dev.usage_cent_per_kwh,
+            )
     logger.info("MQTT Discovery configs published")
 
     # Main polling loop
