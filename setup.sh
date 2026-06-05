@@ -1,6 +1,6 @@
 #!/bin/bash
 # Setup script for Emporia Vue Collector
-# Generates .env and Mosquitto password file
+# Generates .env for connecting to HA's Mosquitto add-on
 
 set -e
 
@@ -20,14 +20,16 @@ read -p "Emporia email: " emporia_email
 read -sp "Emporia password: " emporia_password
 echo
 
-# Generate MQTT credentials
-mqtt_username="emporia"
-mqtt_password=$(openssl rand -base64 24 | tr -d '/+=' | head -c 24)
-
+# MQTT broker settings (HA Mosquitto add-on)
 echo
-echo "Generated MQTT credentials:"
-echo "  Username: ${mqtt_username}"
-echo "  Password: ${mqtt_password}"
+echo "MQTT broker settings (from HA Mosquitto add-on):"
+read -p "HA IP address (e.g. 192.168.1.100): " mqtt_host
+if [ -z "$mqtt_host" ]; then
+  echo "Error: HA IP address is required."
+  exit 1
+fi
+read -p "MQTT username: " mqtt_username
+read -sp "MQTT password: " mqtt_password
 echo
 
 # Write .env
@@ -36,7 +38,9 @@ cat > .env << EOF
 EMPORIA_EMAIL=${emporia_email}
 EMPORIA_PASSWORD=${emporia_password}
 
-# MQTT broker credentials
+# MQTT broker (HA Mosquitto add-on)
+MQTT_HOST=${mqtt_host}
+MQTT_PORT=1883
 MQTT_USERNAME=${mqtt_username}
 MQTT_PASSWORD=${mqtt_password}
 
@@ -46,29 +50,16 @@ LOG_LEVEL=INFO
 EOF
 
 chmod 600 .env
+echo
 echo "Created .env (mode 600)"
-
-# Generate Mosquitto password file using the mosquitto container
-echo "Generating Mosquitto password file..."
-docker run --rm \
-    -v "$(pwd)/mosquitto:/mosquitto/config" \
-    eclipse-mosquitto:2 \
-    mosquitto_passwd -b -c /mosquitto/config/passwords "${mqtt_username}" "${mqtt_password}"
-
-chmod 600 mosquitto/passwords
-echo "Created mosquitto/passwords (mode 600)"
 
 echo
 echo "=== Setup complete ==="
 echo
 echo "Next steps:"
-echo "  1. Start the stack:  docker compose up -d"
-echo "  2. Check logs:       docker compose logs -f collector"
-echo "  3. Add MQTT to HA:"
-echo "     - Go to Settings > Devices & Services > Add Integration > MQTT"
-echo "     - Broker: $(ipconfig getifaddr en0 2>/dev/null || echo 'your-mac-ip')"
-echo "     - Port: 1883"
-echo "     - Username: ${mqtt_username}"
-echo "     - Password: ${mqtt_password}"
+echo "  1. Ensure HA Mosquitto add-on is installed and running"
+echo "  2. Create MQTT user '${mqtt_username}' in HA (Settings > People > Users)"
+echo "  3. Start the collector:  docker compose up -d"
+echo "  4. Check logs:           docker compose logs -f collector"
 echo
-echo "The collector will auto-create energy sensors in HA via MQTT Discovery."
+echo "Sensors will auto-appear in HA via MQTT Discovery."
