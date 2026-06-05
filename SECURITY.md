@@ -6,11 +6,7 @@ If you discover a security vulnerability, please report it responsibly.
 
 **Do not open a public issue.**
 
-Instead, email [jesutter23@me.com](mailto:jesutter23@me.com) with:
-
-- A description of the vulnerability
-- Steps to reproduce
-- Potential impact
+Instead, use [GitHub's private vulnerability reporting](https://github.com/sutterj/emporia-collector/security/advisories/new) to submit a report.  This keeps the details confidential until a fix is available.
 
 I will acknowledge receipt within 48 hours and provide a timeline for a fix.
 
