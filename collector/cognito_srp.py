@@ -66,6 +66,7 @@ POOL_NAME = USER_POOL_ID.split("_", 1)[1]
 
 def _hash_sha256(buf: bytes) -> str:
     """SHA256 hash, returned as zero-padded 64-char hex string."""
+    # codeql [py/weak-sensitive-data-hashing] Suppress: SHA256 is required by the SRP-6a protocol (AWS Cognito). This is a cryptographic handshake, not password storage.
     value = hashlib.sha256(buf).hexdigest()
     return (64 - len(value)) * "0" + value
 
