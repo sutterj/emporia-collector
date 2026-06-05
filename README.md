@@ -46,6 +46,10 @@ docker compose logs -f collector
 
 Sensors auto-appear in HA via MQTT Discovery under "Emporia Vue - [device name]".
 
+> **Note:** Channel names are fetched from the Emporia API at startup.  If you rename
+> circuits in the Emporia app, restart the collector for the changes to appear in HA:
+> `docker compose restart collector`
+
 ## Configuration
 
 All configuration is via environment variables in `.env`:
