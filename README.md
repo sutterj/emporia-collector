@@ -2,6 +2,8 @@
 
 A self-contained Docker service that polls the Emporia Vue cloud API and publishes energy data to MQTT for Home Assistant consumption.
 
+Also works with **Siemens Inhab** devices (Siemens acquired Emporia; Inhab devices use the same cloud API and Emporia app).
+
 ## Why?
 
 The existing `ha-emporia-vue` HACS integration runs third-party code (`PyEmVue`, `pycognito`) directly inside Home Assistant.  This collector isolates the untrusted cloud interaction in a separate container with no access to HA's API, devices, or configuration.
@@ -71,9 +73,13 @@ The collector creates one HA sensor entity per circuit on your Vue.  For a Vue G
 - `sensor.emporia_vue_<gid>_circuit_1` through `circuit_16`
 - `sensor.emporia_vue_<gid>_balance` (unmeasured remainder)
 
-Each sensor reports:
-- Power in watts (device_class: power, state_class: measurement)
-- Availability tied to collector status
+Each circuit gets two sensors:
+- **Power** in watts (device_class: power, state_class: measurement)
+- **Energy** in kWh (device_class: energy, state_class: total_increasing)
+
+The collector also publishes a single **energy cost sensor** per device (`sensor.emporia_vue_<gid>_energy_cost`) with your utility rate in $/kWh (from the Emporia app's configured rate).  This can be used as the cost entity in HA's Energy dashboard.
+
+All sensors include availability tied to collector status.
 
 ## Testing Auth
 
