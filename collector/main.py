@@ -122,6 +122,7 @@ def main():
             publisher.publish_discovery(
                 device_gid=dev.device_gid,
                 device_name=dev.device_name,
+                device_model=dev.model,
                 channel_num=ch.channel_num,
                 channel_name=ch.display_name,
                 channel_slug=ch.slug,

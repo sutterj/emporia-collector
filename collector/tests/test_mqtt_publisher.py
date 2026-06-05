@@ -81,6 +81,7 @@ class TestMQTTDiscovery:
 
         pub.publish_discovery(
             device_gid=12345,
+            device_model="VUE003",
             device_name="Home Panel",
             channel_num="1,2,3",
             channel_name="Main",
@@ -127,6 +128,7 @@ class TestMQTTDiscovery:
 
         pub.publish_discovery(
             device_gid=99,
+            device_model="VUE003",
             device_name="My Vue",
             channel_num="5",
             channel_name="Dryer",
@@ -161,7 +163,7 @@ class TestMQTTDiscovery:
         pub._connected = True
 
         pub.publish_discovery(
-            device_gid=1, device_name="X",
+            device_gid=1, device_name="X", device_model="VUE003",
             channel_num="1", channel_name="Y", channel_slug="y",
         )
 
@@ -179,11 +181,11 @@ class TestMQTTDiscovery:
         pub._connected = True
 
         pub.publish_discovery(
-            device_gid=1, device_name="X",
+            device_gid=1, device_name="X", device_model="VUE003",
             channel_num="1", channel_name="Y", channel_slug="y",
         )
         pub.publish_discovery(
-            device_gid=1, device_name="X",
+            device_gid=1, device_name="X", device_model="VUE003",
             channel_num="1", channel_name="Y", channel_slug="y",
         )
 

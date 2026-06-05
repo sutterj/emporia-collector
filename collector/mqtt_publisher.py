@@ -105,6 +105,7 @@ class MQTTPublisher:
         self,
         device_gid: int,
         device_name: str,
+        device_model: str,
         channel_num: str,
         channel_name: str,
         channel_slug: str,
@@ -120,11 +121,19 @@ class MQTTPublisher:
             f"/channel/{channel_slug}/state"
         )
 
+        # Map model codes to friendly names
+        model_names = {
+            "VUE001": "Vue Gen 1",
+            "VUE002": "Vue Gen 2",
+            "VUE003": "Vue Gen 3",
+        }
+        friendly_model = model_names.get(device_model, device_model)
+
         device_info = {
             "identifiers": [f"emporia_vue_{device_gid}"],
             "name": f"Emporia Vue - {device_name}",
             "manufacturer": "Emporia Energy",
-            "model": "Vue Gen 3",
+            "model": friendly_model,
         }
 
         # Power sensor (W) - for real-time display

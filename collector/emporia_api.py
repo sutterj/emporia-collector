@@ -144,6 +144,8 @@ class EmporiaAPI:
             time_zone = loc.get("timeZone", "UTC")
 
             channels = []
+
+            # Top-level channels (Main "1,2,3")
             for ch_data in dev_data.get("channels", []):
                 channels.append(Channel(
                     device_gid=ch_data["deviceGid"],
@@ -151,6 +153,23 @@ class EmporiaAPI:
                     name=ch_data.get("name") or "",
                     multiplier=ch_data.get("channelMultiplier", 1.0),
                 ))
+
+            # Nested sub-device channels (individual circuits)
+            # Vue Gen 3 puts branch circuits under devices[].devices[].channels
+            for sub_dev in dev_data.get("devices", []):
+                for ch_data in sub_dev.get("channels", []):
+                    # Skip individual legs of merged 240V circuits
+                    # (they have parentChannelNum set, indicating they roll up
+                    # into a merged channel like "Air Conditioner" or "Dryer")
+                    if ch_data.get("parentChannelNum"):
+                        continue
+
+                    channels.append(Channel(
+                        device_gid=ch_data["deviceGid"],
+                        channel_num=ch_data["channelNum"],
+                        name=ch_data.get("name") or "",
+                        multiplier=ch_data.get("channelMultiplier", 1.0),
+                    ))
 
             devices.append(Device(
                 device_gid=gid,
