@@ -1,0 +1,56 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: emporia-mosquitto
+    restart: unless-stopped
+    ports:
+      # Only expose to host (HA connects from host network)
+      - "127.0.0.1:1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/passwords:/mosquitto/config/passwords:ro
+      - mosquitto-data:/mosquitto/data
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h localhost -u $${MQTT_USERNAME} -P $${MQTT_PASSWORD} -t '$$SYS/broker/uptime' -C 1 -W 3"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    environment:
+      - MQTT_USERNAME=${MQTT_USERNAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+
+  collector:
+    build: ./collector
+    container_name: emporia-collector
+    restart: unless-stopped
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    environment:
+      - EMPORIA_EMAIL=${EMPORIA_EMAIL}
+      - EMPORIA_PASSWORD=${EMPORIA_PASSWORD}
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_USERNAME=${MQTT_USERNAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - POLL_INTERVAL=${POLL_INTERVAL:-60}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    # Security hardening
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  test:
+    build:
+      context: ./collector
+      dockerfile: Dockerfile.test
+    container_name: emporia-test
+    profiles:
+      - test
+
+volumes:
+  mosquitto-data:
