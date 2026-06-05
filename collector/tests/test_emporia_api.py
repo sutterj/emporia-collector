@@ -137,18 +137,34 @@ class TestEmporiaAPIGetDevices:
                             "name": None,
                             "channelMultiplier": 1.0,
                         },
+                    ],
+                    "devices": [
                         {
                             "deviceGid": 12345,
-                            "channelNum": "1",
-                            "name": "Kitchen",
-                            "channelMultiplier": 1.0,
-                        },
-                        {
-                            "deviceGid": 12345,
-                            "channelNum": "2",
-                            "name": "Dryer",
-                            "channelMultiplier": 2.0,
-                        },
+                            "channels": [
+                                {
+                                    "deviceGid": 12345,
+                                    "channelNum": "1",
+                                    "name": None,
+                                    "channelMultiplier": 1.0,
+                                    "parentChannelNum": "97",
+                                },
+                                {
+                                    "deviceGid": 12345,
+                                    "channelNum": "5",
+                                    "name": "Kitchen",
+                                    "channelMultiplier": 1.0,
+                                    "parentChannelNum": None,
+                                },
+                                {
+                                    "deviceGid": 12345,
+                                    "channelNum": "97",
+                                    "name": "Dryer",
+                                    "channelMultiplier": 1.0,
+                                    "parentChannelNum": None,
+                                },
+                            ],
+                        }
                     ],
                 }
             ]
@@ -169,11 +185,14 @@ class TestEmporiaAPIGetDevices:
         assert dev.model == "VUE003"
         assert dev.device_name == "Home Panel"
         assert dev.time_zone == "America/New_York"
+        # Main + Kitchen + Dryer (channel 1 skipped due to parentChannelNum)
         assert len(dev.channels) == 3
         assert dev.channels[0].channel_num == "1,2,3"
         assert dev.channels[0].display_name == "Main"
         assert dev.channels[1].name == "Kitchen"
-        assert dev.channels[2].multiplier == 2.0
+        assert dev.channels[1].channel_num == "5"
+        assert dev.channels[2].name == "Dryer"
+        assert dev.channels[2].channel_num == "97"
 
     @patch("emporia_api.urllib.request.urlopen")
     def test_empty_device_list(self, mock_urlopen):
