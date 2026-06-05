@@ -105,6 +105,7 @@ class MQTTPublisher:
         self,
         device_gid: int,
         device_name: str,
+        device_model: str,
         channel_num: str,
         channel_name: str,
         channel_slug: str,
@@ -120,11 +121,19 @@ class MQTTPublisher:
             f"/channel/{channel_slug}/state"
         )
 
+        # Map model codes to friendly names
+        model_names = {
+            "VUE001": "Vue Gen 1",
+            "VUE002": "Vue Gen 2",
+            "VUE003": "Vue Gen 3",
+        }
+        friendly_model = model_names.get(device_model, device_model)
+
         device_info = {
             "identifiers": [f"emporia_vue_{device_gid}"],
             "name": f"Emporia Vue - {device_name}",
             "manufacturer": "Emporia Energy",
-            "model": "Vue Gen 3",
+            "model": friendly_model,
         }
 
         # Power sensor (W) - for real-time display
@@ -175,6 +184,63 @@ class MQTTPublisher:
 
         self._discovery_sent.add(unique_id)
         logger.debug("Published discovery for %s (power + energy)", unique_id)
+
+    def publish_energy_cost(
+        self,
+        device_gid: int,
+        device_name: str,
+        device_model: str,
+        cost_cent_per_kwh: float,
+    ) -> None:
+        """Publish an energy cost sensor ($/kWh) for the Energy dashboard."""
+        unique_id = f"emporia_{device_gid}_energy_cost"
+
+        if unique_id in self._discovery_sent:
+            return
+
+        state_topic = f"{STATE_PREFIX}/device/{device_gid}/energy_cost"
+
+        model_names = {
+            "VUE001": "Vue Gen 1",
+            "VUE002": "Vue Gen 2",
+            "VUE003": "Vue Gen 3",
+        }
+        friendly_model = model_names.get(device_model, device_model)
+
+        device_info = {
+            "identifiers": [f"emporia_vue_{device_gid}"],
+            "name": f"Emporia Vue - {device_name}",
+            "manufacturer": "Emporia Energy",
+            "model": friendly_model,
+        }
+
+        config = {
+            "name": f"{device_name} Energy Cost",
+            "unique_id": unique_id,
+            "state_topic": state_topic,
+            "unit_of_measurement": "$/kWh",
+            "icon": "mdi:currency-usd",
+            "availability_topic": AVAILABILITY_TOPIC,
+            "payload_available": "online",
+            "payload_not_available": "offline",
+            "device": device_info,
+        }
+
+        self._client.publish(
+            f"{DISCOVERY_PREFIX}/sensor/{unique_id}/config",
+            json.dumps(config),
+            qos=1,
+            retain=True,
+        )
+
+        # Publish the current value (convert cents to dollars)
+        cost_per_kwh = round(cost_cent_per_kwh / 100.0, 4)
+        self._client.publish(state_topic, str(cost_per_kwh), qos=1, retain=True)
+
+        self._discovery_sent.add(unique_id)
+        logger.debug(
+            "Published energy cost sensor: $%.4f/kWh", cost_per_kwh
+        )
 
     def publish_usage(
         self,
